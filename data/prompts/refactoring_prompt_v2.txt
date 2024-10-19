@@ -1,0 +1,35 @@
+Task: {task_description}
+
+Use a Chain-of-Thought approach to refactor the code:
+1. Analyze the provided method to identify logical code blocks that can be grouped into smaller, independent methods. Each block should perform a specific, well-defined task.
+2. Reference historical refactorings: We have provided examples of code before and after method extraction refactoring, as well as the extracted methods between them. Use these historical examples as a reference when performing method extraction in the current code. This will help you maintain consistency in naming conventions, method structure, and overall refactoring approach.
+3. Create new methods for the identified blocks, ensuring each new method has a meaningful name that describes its functionality. Pass any necessary arguments from the original method.
+4. Replace the original code blocks in the provided method with calls to the newly created methods. Ensure the original method now acts as a higher-level orchestrator.
+5. Ensure code correctness by keeping the functionality unchanged, and that the refactored method still performs as intended.
+
+The source code provided for refactoring is as follows:
+{code_to_refactor}
+
+The context of the source code is as follows:
+{context_description}
+
+Example of Historical Refactorings:
+{historical_refactorings}
+
+Output Requirements:
+The refactored method should call smaller, extracted methods.
+Each extracted method should represent a clear, single responsibility.
+The extracted methods and refactored code should follow the structure of the historical refactorings provided.
+The original functionality must remain unchanged.
+If no refactoring is necessary, respond with "No need to refactor."
+If refactoring is performed, output the original code and the refactored code in the following format:
+### Original Code:
+```java
+// Original code goes here
+```
+### Refactored Code:
+```java
+// Refactored code goes here
+```
+
+

@@ -1,0 +1,22 @@
+Task: {task_description}
+
+Historical Refactoring Examples:
+{historical_refactorings}
+
+Code to Refactor:
+{code_to_refactor}
+
+Instructions:
+1. Analyze the provided code and apply relevant refactoring techniques from the historical examples.
+2. If refactoring is performed, output the original code and the refactored code in the following format:
+### Original Code:
+```java
+// Original code goes here
+```
+### Refactored Code:
+```java
+// Refactored code goes here
+```
+If no refactoring is necessary, respond with "No need to refactor."
+
+
