@@ -1,0 +1,8 @@
+<document>
+{WHOLE_CONTEXT}
+</document>
+Here is the code we want to situate within the whole context
+<code>
+{SOURCE_CODE}
+</code>
+Please give a short succinct context to situate this code within the overall document for the purposes of improving search retrieval of the code. Answer only with the succinct context and nothing else.

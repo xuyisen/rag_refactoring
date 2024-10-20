@@ -3,7 +3,6 @@ import os
 from langchain.prompts import PromptTemplate
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
-from sqlalchemy.testing.suite.test_reflection import metadata
 
 from rag_refactoring import search_chroma, remove_java_comments
 from util import project_name
