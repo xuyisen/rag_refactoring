@@ -84,11 +84,11 @@ def process_commits(file_path, prompt_file_path, output_file_path, limit=None):
 
             # Increment the counter and stop if the limit is reached
             count += 1
-            if limit and count >= limit:
-                print(f"Processed {count} refactorings (limit reached).")
-                save_json(output_file_path, data)  # Save the updated data to the new file
-                return
-
+            # if limit and count >= limit:
+            #     print(f"Processed {count} refactorings (limit reached).")
+            #     save_json(output_file_path, data)  # Save the updated data to the new file
+            #     return
+    save_json(output_file_path, data)
     print(f"Processed {count} refactorings.")
 
 if __name__ == "__main__":
@@ -96,4 +96,4 @@ if __name__ == "__main__":
     output_json_path = 'data/output/refactoring_miner_em_refactoring_context_w_sc_v2.json'  # Path for the output JSON file
     prompt_file_path = 'data/prompts/context_refactoring_prompt.txt'  # Path to the prompt file
 
-    process_commits(input_json_path, prompt_file_path, output_json_path, limit=5)  # Process up to 5 refactorings
+    process_commits(input_json_path, prompt_file_path, output_json_path, limit=600)  # Process up to 5 refactorings

@@ -49,6 +49,7 @@ def add_documents_to_chroma(collection_name, file_path, num_count):
             if unique_id not in unique_ids_set and refactoring['isPureRefactoring']:
                 # 获取所需字段
                 source_before = remove_java_comments(refactoring['sourceCodeBeforeRefactoring'])
+                context_description = refactoring['contextDescription']
                 refactoring_data_to_store = {
                     "type": "Extract Method",
                     "sourceCodeBeforeRefactoring": refactoring['sourceCodeBeforeRefactoring'],
@@ -62,11 +63,12 @@ def add_documents_to_chroma(collection_name, file_path, num_count):
                     "classSignatureBefore": refactoring['classSignatureBefore'],
                     "sourceCodeAfterRefactoring": refactoring['sourceCodeAfterRefactoring'],
                     "diffSourceCode": refactoring['diffSourceCode'],
-                    "uniqueId": refactoring['uniqueId']
+                    "uniqueId": refactoring['uniqueId'],
+                    "contextDescription": refactoring['contextDescription'],
             }
 
                 # 添加到 documents 和 ids
-                documents.append(source_before)
+                documents.append(context_description + '\n' + source_before)
                 metadata_refactoring.append(refactoring_data_to_store)
                 ids.append(unique_id)
                 count += 1
@@ -99,9 +101,9 @@ def search_chroma(text,n_results,collection_name):
     return results
 
 if __name__ == "__main__":
-    # connection = chroma_client.get_or_create_collection(name='refactoring_miner_em_wc_collection')
-    # print(connection.count())
+    connection = chroma_client.get_or_create_collection(name='refactoring_miner_em_wc_context_collection')
+    print(connection.count())
     # chroma_client.delete_collection(name='refactoring_miner_em_wc_collection')
-    # add_documents_to_chroma('refactoring_miner_em_wc_collection', 'data/refactoring_info/refactoring_miner_em_refactoring_w_sc.json', 150)
-    result = search_chroma("@Override\n    public void start() {\n        mStorageManager = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);\n        final boolean connected = mStorageManager.isUsbMassStorageConnected();\n        if (DEBUG) Log.d(TAG, String.format( \"Startup with UMS connection %s (media state %s)\",\n                mUmsAvailable, Environment.getExternalStorageState()));\n\n        HandlerThread thr = new HandlerThread(\"SystemUI StorageNotification\");\n        thr.start();\n        mAsyncEventHandler = new Handler(thr.getLooper());\n\n        StorageNotificationEventListener listener = new StorageNotificationEventListener();\n        listener.onUsbMassStorageConnectionChanged(connected);\n        mStorageManager.registerListener(listener);\n    }", 3, 'refactoring_miner_em_wc_collection')
-    print(result)
+    # add_documents_to_chroma('refactoring_miner_em_wc_context_collection', 'data/output/refactoring_miner_em_refactoring_context_w_sc_v2.json', 200)
+    # result = search_chroma("@Override\n    public void start() {\n        mStorageManager = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);\n        final boolean connected = mStorageManager.isUsbMassStorageConnected();\n        if (DEBUG) Log.d(TAG, String.format( \"Startup with UMS connection %s (media state %s)\",\n                mUmsAvailable, Environment.getExternalStorageState()));\n\n        HandlerThread thr = new HandlerThread(\"SystemUI StorageNotification\");\n        thr.start();\n        mAsyncEventHandler = new Handler(thr.getLooper());\n\n        StorageNotificationEventListener listener = new StorageNotificationEventListener();\n        listener.onUsbMassStorageConnectionChanged(connected);\n        mStorageManager.registerListener(listener);\n    }", 3, 'refactoring_miner_em_wc_collection')
+    # print(result)

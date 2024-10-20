@@ -4,7 +4,7 @@ from langchain.prompts import PromptTemplate
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 
-from rag_refactoring import search_chroma, remove_java_comments
+from rag_embedding import search_chroma, remove_java_comments
 from util import project_name
 
 # OpenAI API key
@@ -15,7 +15,7 @@ llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=OPENAI_API_K
 
 # 调用 search_chroma 获取历史重构例子
 def get_historical_refactorings(search_text):
-    result = search_chroma(search_text, n_results=3, collection_name='refactoring_miner_em_wc_collection')
+    embedding_result = search_chroma(search_text, n_results=10, collection_name='refactoring_miner_em_wc_collection')
     metadata_refactoring = result['metadatas'][0]
     search_result = "\n".join([
         f"Example {i + 1}:\n SourceCodeBeforeRefactoring:\n {example['sourceCodeBeforeRefactoring']}\n SourceCodeAfterRefactoring:\n{example['sourceCodeAfterRefactoring']}\n DiffSourceCode:\n{example['diffSourceCode']}\n"
