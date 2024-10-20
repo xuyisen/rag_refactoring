@@ -4,7 +4,11 @@ from langchain.prompts import PromptTemplate
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 
+from bm25 import BM25
 from rag_embedding import search_chroma, remove_java_comments
+from reciprocal_rank_fusion import ReciprocalRankFusion
+from refactoring_entity import RefactoringRepository
+from reranking import Reranking
 from util import project_name
 
 # OpenAI API key
@@ -14,9 +18,33 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=OPENAI_API_KEY)
 
 # 调用 search_chroma 获取历史重构例子
-def get_historical_refactorings(search_text):
-    embedding_result = search_chroma(search_text, n_results=10, collection_name='refactoring_miner_em_wc_collection')
-    metadata_refactoring = result['metadatas'][0]
+def get_historical_refactorings(search_text, refactoring_map, bm25_model):
+    # get embedding search result
+    embedding_result = search_chroma(search_text, n_results=10, collection_name='refactoring_miner_em_wc_context_collection')
+    embedding_document = embedding_result['documents'][0]
+    # get BM25 search result
+    bm25_document = bm25_model.search(search_text, top_n=10)
+    # reciprocal rank fusion
+    ranked_lists = [embedding_document, bm25_document]
+    rrf = ReciprocalRankFusion(k=60)
+
+    scores = rrf.fuse(ranked_lists)
+    print("RRF Scores:", scores)
+
+    # Get the top 10 documents
+    top_docs = rrf.get_top_n(scores, n=10)
+    print("Top 10 Documents:", top_docs)
+
+    top_docs_text = [doc[0] for doc in top_docs]
+    # Reranking the top 10 documents
+    reranker = Reranking("colbert")
+    query = search_text
+    ranked_results = reranker.rerank(query, top_docs_text)
+    top_ranked_result = ranked_results.top_k(3)
+    metadata_refactoring = []
+    for result in top_ranked_result:
+        print(f"Rank: {result.rank}, Score: {result.score}, Document: {result.document.text}")
+        metadata_refactoring.append(refactoring_map[result.document.text])
     search_result = "\n".join([
         f"Example {i + 1}:\n SourceCodeBeforeRefactoring:\n {example['sourceCodeBeforeRefactoring']}\n SourceCodeAfterRefactoring:\n{example['sourceCodeAfterRefactoring']}\n DiffSourceCode:\n{example['diffSourceCode']}\n"
         for i, example in enumerate(metadata_refactoring)
@@ -29,47 +57,44 @@ def load_prompt_template(prompt_file_path):
     with open(prompt_file_path, 'r') as prompt_file:
         return prompt_file.read()
 
-# 获取历史重构例子
-# historical_refactorings = get_historical_refactorings(code_to_refactor)
-
 # Function to save refactoring results to a file
 def save_refactoring_results(output_file_path, results):
     with open(output_file_path, 'w') as output_file:
         json.dump(results, output_file, indent=4)
 
-def refactor_code(to_be_refactored_code):
-    # 1. 任务介绍
-    task_description = """
-           You are an expert software engineer. Your task is to refactor the following code to improve its readability and efficiency without changing its functionality.
-           """
-
-    # 2. 读取文件路径中的prompt模板
-    prompt_file_path = 'data/prompts/refactoring_prompt_v1.txt'
-    prompt_template = load_prompt_template(prompt_file_path)
-    historical_refactorings = get_historical_refactorings(to_be_refactored_code)
-    print(historical_refactorings)
-    # Create a PromptTemplate instance
-    prompt = PromptTemplate(
-        input_variables=["task_description", "historical_refactorings", "code_to_refactor"],
-        template=prompt_template,
-    )
-    # Create a PromptTemplate instance
-    prompt = PromptTemplate(
-        input_variables=["task_description", "historical_refactorings", "code_to_refactor"],
-        template=prompt_template,
-    )
-
-    # Generate the final prompt
-    final_prompt = prompt.format(
-        task_description=task_description.strip(),
-        historical_refactorings=historical_refactorings.strip(),
-        code_to_refactor=to_be_refactored_code
-    )
-
-    # Call the LLM to generate the refactored code
-    messages = [HumanMessage(content=final_prompt)]
-    refactored_code = llm.invoke(messages).content
-    print(refactored_code)
+# def refactor_code(to_be_refactored_code):
+#     # 1. 任务介绍
+#     task_description = """
+#            You are an expert software engineer. Your task is to refactor the following code to improve its readability and efficiency without changing its functionality.
+#            """
+#
+#     # 2. 读取文件路径中的prompt模板
+#     prompt_file_path = 'data/prompts/refactoring_prompt_v1.txt'
+#     prompt_template = load_prompt_template(prompt_file_path)
+#     historical_refactorings = "get_historical_refactorings(to_be_refactored_code)"
+#     print(historical_refactorings)
+#     # Create a PromptTemplate instance
+#     prompt = PromptTemplate(
+#         input_variables=["task_description", "historical_refactorings", "code_to_refactor"],
+#         template=prompt_template,
+#     )
+#     # Create a PromptTemplate instance
+#     prompt = PromptTemplate(
+#         input_variables=["task_description", "historical_refactorings", "code_to_refactor"],
+#         template=prompt_template,
+#     )
+#
+#     # Generate the final prompt
+#     final_prompt = prompt.format(
+#         task_description=task_description.strip(),
+#         historical_refactorings=historical_refactorings.strip(),
+#         code_to_refactor=to_be_refactored_code
+#     )
+#
+#     # Call the LLM to generate the refactored code
+#     messages = [HumanMessage(content=final_prompt)]
+#     refactored_code = llm.invoke(messages).content
+#     print(refactored_code)
 
 # Function to process each commit and refactor the code
 def process_commits(commits, output_file_path, num_count):
@@ -83,6 +108,11 @@ def process_commits(commits, output_file_path, num_count):
     prompt_file_path = 'data/prompts/refactoring_prompt_v2.txt'
     prompt_template = load_prompt_template(prompt_file_path)
     refactoring_results = []
+
+    refactoring_map = RefactoringRepository.load_from_file("data/refactoring_info/refactoring_map_em_wc_v2.json",
+                                                           format="json")
+
+    bm25_model = BM25.load_model('data/model/refactoring_miner_em_wc_context_collection_bm25result.pkl')
 
     count = 0
     commits.reverse()
@@ -102,7 +132,7 @@ def process_commits(commits, output_file_path, num_count):
             if not refactoring['isPureRefactoring']:
                 continue
             # Get historical refactoring examples
-            historical_refactorings = get_historical_refactorings(source_code_before_refactoring)
+            historical_refactorings = get_historical_refactorings(source_code_before_refactoring, refactoring_map, bm25_model)
             print(historical_refactorings)
 
             context_description = f"PackageName: {refactoring['packageNameBefore']}\nClassName: {refactoring['classNameBefore']}\nMethodName: {refactoring['methodNameBefore']}\n ClassSignature: {refactoring['classSignatureBefore']}\n"
@@ -150,14 +180,14 @@ def process_commits(commits, output_file_path, num_count):
 
 
 if __name__ == "__main__":
-    project_name = 'gson'
+    # project_name = 'gson'
     # Load the JSON data with commits and refactorings
-    file_path = 'data/refactoring_info/refactoring_miner_em_refactoring_w_sc.json'
+    file_path = 'data/refactoring_info/refactoring_miner_em_refactoring_context_w_sc_v2.json'
     with open(file_path, 'r') as file:
         data = json.load(file)
 
     # Process all commits and save results
-    output_file_path = 'data/output/refactoring_miner_em_refactoring_results_embedding_is_self.json'
+    output_file_path = 'data/output/refactoring_miner_em_refactoring_context_result_w_sc_v2.json'
     process_commits(data['commits'], output_file_path, 10)
 
     # Print confirmation

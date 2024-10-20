@@ -1,3 +1,5 @@
+import pickle
+
 from rank_bm25 import BM25Okapi
 from typing import List
 
@@ -55,18 +57,58 @@ class BM25:
         self.tokenized_corpus.append(self.preprocess(document))  # Preprocess and append the document
         self.bm25 = BM25Okapi(self.tokenized_corpus)  # Rebuild the model with the updated corpus
 
+    def save_model(self, filepath: str):
+        """
+        Saves the BM25 model to a file using pickle.
+
+        Parameters:
+            filepath (str): Path to save the model.
+        """
+        with open(filepath, 'wb') as file:
+            pickle.dump(self, file)
+        print(f"Model saved to {filepath}")
+
+    @staticmethod
+    def load_model(filepath: str) -> 'BM25':
+        """
+        Loads a BM25 model from a file.
+
+        Parameters:
+            filepath (str): Path to load the model from.
+
+        Returns:
+            BM25: The loaded BM25 model object.
+        """
+        with open(filepath, 'rb') as file:
+            model = pickle.load(file)
+        print(f"Model loaded from {filepath}")
+        return model
+
 if __name__ == "__main__":
 
-
     # Define the query and documents
-    query = "weather"
+    query = "London windy"
     documents = [
         "Hello there good man!",
     "It is quite windy in London",
     "How is the weather today?"
     ]
+
+    # Initialize the BM25 model
     bm25_model = BM25(documents)
-    result = bm25_model.search(query, top_n=1)
-    print(result)
+
+    # # Search for the top result
+    # result = bm25_model.search(query, top_n=1)
+    # print(f"Search result: {result}")
+
+    # Save the model to a file
+    bm25_model.save_model('data/model/bm25result.pkl')
+
+    # Load the model from the file
+    loaded_model = BM25.load_model('data/model/bm25result.pkl')
+
+    # Verify the loaded model by searching again
+    loaded_result = loaded_model.search(query, top_n=1)
+    print(f"Loaded model search result: {loaded_result}")
 
 

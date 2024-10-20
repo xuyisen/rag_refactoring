@@ -2,7 +2,8 @@ import json
 import re
 
 import chromadb
-from sqlalchemy.testing.suite.test_reflection import metadata
+
+from bm25 import BM25
 
 chroma_client = chromadb.HttpClient(host='localhost', port=8000)
 from chromadb.utils import embedding_functions
@@ -87,6 +88,9 @@ def add_documents_to_chroma(collection_name, file_path, num_count):
             metadatas=metadata_refactoring,
             ids=ids,
         )
+        # add document to bm25
+        bm25_model = BM25(documents)
+        bm25_model.save_model(f'data/model/{collection_name}_bm25result.pkl')
     else:
         print("No new unique IDs to add.")
 
@@ -104,6 +108,6 @@ if __name__ == "__main__":
     connection = chroma_client.get_or_create_collection(name='refactoring_miner_em_wc_context_collection')
     print(connection.count())
     # chroma_client.delete_collection(name='refactoring_miner_em_wc_collection')
-    # add_documents_to_chroma('refactoring_miner_em_wc_context_collection', 'data/output/refactoring_miner_em_refactoring_context_w_sc_v2.json', 200)
+    add_documents_to_chroma('refactoring_miner_em_wc_context_collection', 'data/refactoring_info/refactoring_miner_em_refactoring_context_w_sc_v2.json', 200)
     # result = search_chroma("@Override\n    public void start() {\n        mStorageManager = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);\n        final boolean connected = mStorageManager.isUsbMassStorageConnected();\n        if (DEBUG) Log.d(TAG, String.format( \"Startup with UMS connection %s (media state %s)\",\n                mUmsAvailable, Environment.getExternalStorageState()));\n\n        HandlerThread thr = new HandlerThread(\"SystemUI StorageNotification\");\n        thr.start();\n        mAsyncEventHandler = new Handler(thr.getLooper());\n\n        StorageNotificationEventListener listener = new StorageNotificationEventListener();\n        listener.onUsbMassStorageConnectionChanged(connected);\n        mStorageManager.registerListener(listener);\n    }", 3, 'refactoring_miner_em_wc_collection')
     # print(result)

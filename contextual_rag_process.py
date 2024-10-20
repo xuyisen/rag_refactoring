@@ -93,7 +93,7 @@ def process_commits(file_path, prompt_file_path, output_file_path, limit=None):
 
 if __name__ == "__main__":
     input_json_path = 'data/refactoring_info/refactoring_miner_em_refactoring_w_sc_v2.json'  # Path to the input JSON file
-    output_json_path = 'data/output/refactoring_miner_em_refactoring_context_w_sc_v2.json'  # Path for the output JSON file
+    output_json_path = 'data/refactoring_info/refactoring_miner_em_refactoring_context_w_sc_v2.json'  # Path for the output JSON file
     prompt_file_path = 'data/prompts/context_refactoring_prompt.txt'  # Path to the prompt file
 
     process_commits(input_json_path, prompt_file_path, output_json_path, limit=600)  # Process up to 5 refactorings
