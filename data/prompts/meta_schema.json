@@ -1,0 +1,129 @@
+{
+  "name": "metaschema",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "The name of the schema"
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "object",
+          "array",
+          "string",
+          "number",
+          "boolean",
+          "null"
+        ]
+      },
+      "properties": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/$defs/schema_definition"
+        }
+      },
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/schema_definition"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/schema_definition"
+            }
+          }
+        ]
+      },
+      "required": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "type"
+    ],
+    "additionalProperties": False,
+    "if": {
+      "properties": {
+        "type": {
+          "const": "object"
+        }
+      }
+    },
+    "then": {
+      "required": [
+        "properties"
+      ]
+    },
+    "$defs": {
+      "schema_definition": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "object",
+              "array",
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/$defs/schema_definition"
+            }
+          },
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/schema_definition"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/schema_definition"
+                }
+              }
+            ]
+          },
+          "required": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "additionalProperties": False,
+        "if": {
+          "properties": {
+            "type": {
+              "const": "object"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "properties"
+          ]
+        }
+      }
+    }
+  }
+}

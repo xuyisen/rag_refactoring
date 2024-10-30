@@ -3,6 +3,7 @@ import os
 from langchain.prompts import PromptTemplate
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
+from openai import OpenAI
 
 from bm25 import BM25
 from rag_embedding import search_chroma, remove_java_comments
@@ -16,6 +17,8 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # 创建一个LangChain模型
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=OPENAI_API_KEY)
+
+client = OpenAI()
 
 # 调用 search_chroma 获取历史重构例子
 def get_historical_refactorings(search_text, refactoring_map, bm25_model):
@@ -152,8 +155,10 @@ def process_commits(commits, output_file_path, num_count):
                 context_description=context_description.strip()
             )
             print(final_prompt)
+            META_PROMPT = load_prompt_template('data/prompts/meta_prompt.txt')
+            updated_prompt = generate_prompt(final_prompt, META_PROMPT)
             # Call the LLM to generate the refactored code
-            messages = [HumanMessage(content=final_prompt)]
+            messages = [HumanMessage(content=updated_prompt)]
             refactored_code = llm.invoke(messages).content
             print(refactored_code)
             # Collect the result for this commit
@@ -168,7 +173,8 @@ def process_commits(commits, output_file_path, num_count):
                 "uniqueId": refactoring['uniqueId'],
                 "historicalRefactorings": historical_refactorings,
                 "contextDescription": context_description,
-                "prompt": final_prompt
+                "prompt": final_prompt,
+                "updatedPrompt": updated_prompt
             })
             count += 1
 
@@ -179,6 +185,25 @@ def process_commits(commits, output_file_path, num_count):
 
 
 
+
+def generate_prompt(task_or_prompt: str, META_PROMPT: str):
+    completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": META_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": "Task, Goal, or Current Prompt:\n" + task_or_prompt,
+            },
+        ],
+    )
+
+    return completion.choices[0].message.content
+
+    return json.loads(completion.choices[0].message.content)
 if __name__ == "__main__":
     # project_name = 'gson'
     # Load the JSON data with commits and refactorings
@@ -187,7 +212,7 @@ if __name__ == "__main__":
         data = json.load(file)
 
     # Process all commits and save results
-    output_file_path = 'data/output/refactoring_miner_em_refactoring_context_result_w_sc_v2.json'
+    output_file_path = 'data/output/refactoring_miner_em_refactoring_context_result_meta_prompt_w_sc_v2.json'
     process_commits(data['commits'], output_file_path, 10)
 
     # Print confirmation
